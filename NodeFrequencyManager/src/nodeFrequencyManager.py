@@ -4,8 +4,8 @@ import argparse
 import logging
 import grpc
 from concurrent import futures
-import rpcNFM_pb2 as myMessages # Simplified usage
-import rpcNFM_pb2_grpc as myRPC
+import rpcNFM_pb2 as messagesNFD # Simplified usage
+import rpcNFM_pb2_grpc as rpcNFD
 
 procInfoDir="/sys/devices/system/cpu"
 desiredFreqStats=["cpuinfo_min_freq","scaling_driver","cpuinfo_cur_freq","energy_performance_preference","cpuinfo_max_freq","scaling_cur_freq","scaling_governor","scaling_available_governors"]
@@ -14,7 +14,7 @@ coreCount = 0
 errorStr=""
 sysFreqInfo={}
 
-VersionStr="19.02.20 Build 1"
+VersionStr="19.02.20 Build 2"
 
 logger = logging.getLogger(__name__)
 
@@ -61,9 +61,12 @@ def WriteToFile(Filename,value):
     return True
     #return file.write(read().strip()
 
-class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
+class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
     def __init__(self):
-        self._getFrequencyInfo()
+        try:
+            self._getFrequencyInfo()
+        except:
+            pass
 
     def _getFrequencyInfo(self):
         retMap={}
@@ -195,7 +198,8 @@ class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
             self._setCoreFrequencyPercent(coreNum,a[coreNum]*100 + 50)
 
     def Set_Core_Frequency(self, request, context):
-        response = myMessages.ServiceResponse()
+        logger.info("Processing Set_Core_Frequency request")
+        response = messagesNFD.ServiceResponse()
         errorStr="OK"
 
         responseCode = self._setCoreFrequency(request.coreNum,request.Frequency)
@@ -205,7 +209,8 @@ class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
         return response
     
     def Set_All_Core_Frequency(self, request, context):
-        response = myMessages.ServiceResponse()
+        logger.info("Processing Set_All_Core_Frequency request")
+        response = messagesNFD.ServiceResponse()
         errorStr="OK"
 
         responseCode = self._setAllCoreFrequency(request.Frequency)
@@ -215,7 +220,8 @@ class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
         return response
 
     def Set_Core_Percent_Frequency(self, request, context):
-        response = myMessages.ServiceResponse()
+        logger.info("Processing Set_Core_Percent_Frequency request")
+        response = messagesNFD.ServiceResponse()
         errorStr="OK"
 
         responseCode = self._setCoreFrequencyPercent(request.coreNum,request.Frequency)
@@ -225,7 +231,8 @@ class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
         return response
         
     def Set_All_Core_Percent_Frequency(self, request, context):
-        response = myMessages.ServiceResponse()
+        logger.info("Processing Set_All_Core_Percent_Frequency request")
+        response = messagesNFD.ServiceResponse()
         errorStr="OK"
 
         responseCode = self._setAllCoreFrequencyPercent(request.frequency)
@@ -235,13 +242,15 @@ class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
         return response
 
     def Get_Core_FrequencyInfo(self, request, context):
-        response = myMessages.CoreFrequencyInfo()
+        logger.info("Processing Get_Core_Frequency request")
+
+        response = messagesNFD.CoreFrequencyInfo()
         errorStr="OK"
         response.CoreNumber = request.CoreNumber
         response.MaxFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_max_freq"))
         response.MinFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_min_freq"))
         response.CurrentFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"scaling_cur_freq"))
-        successResp = myMessages.ServiceResponse()
+        successResp = messagesNFD.ServiceResponse()
         successResp.Success = errorStr == "OK"
         successResp.Reason = errorStr
         response.Response = successResp
@@ -249,7 +258,8 @@ class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
         return response
 
     def Set_Random_Frequencies(self, request, context):
-        response = myMessages.CoreFrequencyInfo()
+        logger.info("Setting frequencies to reandom pattern")
+        response = messagesNFD.CoreFrequencyInfo()
         self._doRandom()
         response.Success = True
         response.Reason = "OK"
@@ -257,7 +267,8 @@ class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
         return response
 
     def Set_SineWave_Frequencies(self, request, context):
-        response = myMessages.CoreFrequencyInfo()
+        logger.info("Setting frequencies to sine wave pattern")
+        response = messagesNFD.ServiceResponse()
         self._doSine()
         response.Success = True
         response.Reason = "OK"
@@ -266,30 +277,30 @@ class NodeFrequencyManager(myRPC.NodeFrequencyManagerServiceServicer):
 
     
 def runAsService(hostAddr,hostPort):
-    print("Launching as service at {0}:{1}. Version: {2}".format(hostAddr,hostPort,VersionStr))
+    print("Launching Node Frequency Manager at {0}:{1}. Version: {2}".format(hostAddr,hostPort,VersionStr))
 
     try:
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        myRPC.add_NodeFrequencyManagerServiceServicer_to_server(NodeFrequencyManager(),server)
+        rpcNFD.add_NodeFrequencyManagerServiceServicer_to_server(NodeFrequencyManager(),server)
 
     except Exception as Ex:
-        logger.error("Error Starting server:")
+        logger.error("Error Starting NFM:")
         logger.error(str(Ex))
         return
     
     try:
         server.add_insecure_port(hostAddr +':' + str(hostPort))
         server.start()
-        logger.debug("Service Started")
+        logger.debug("NFM Started")
     except Exception as Ex:
-        logger.error("Error Starting Service:")
+        logger.error("Error Starting NFM:")
         logger.error(str(Ex))
         return
 
     # server returns, so let's just spin for a while
     try:
         while True:
-            time.sleep(1000)
+            SleepMs(1000)
 
     except KeyboardInterrupt:
         server.stop(0)

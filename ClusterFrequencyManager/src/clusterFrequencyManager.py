@@ -13,6 +13,7 @@ VersionStr="19.02.20 Build 1"
 
 logger = logging.getLogger(__name__)
 _VerboseLevel = logging.ERROR
+_NodeList=[]
 
 # just a wrapper routine for a thread sleeping.  In case needs to be OS specific or something
 def Sleep(seconds):
@@ -28,9 +29,89 @@ def SleepMs(milliseconds):
 class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer):
     def __init__(self):
         pass
+
+    def Set_Cluster_Core_Frequency(self, request, context):
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.SetFrequencyRequest()
+        nodeRequest.Frequency = request.Frequency
+        for targetNode in _NodeList:
+             with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Set_AllCore_Frequency(nodeRequest)                 
+                if False == response.Success:
+                    errorStr = "{0} calling Set_AllCore_Frequency() to node {1}".format(response.Reason,targetNode)
+                    success = False
+        
+        fnResponse = ClusterMessages.ServiceResponse()
+        fnResponse.Success = success
+        fnResponse.Reason = errorStr
+
+        return fnResponse
+
+    def Set_Cluster_Core_Frequency_Percent(self, request, context):
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.SetFrequencyPercentRequest()
+        nodeRequest.Frequency = request.Frequency
+        for targetNode in _NodeList:
+             with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Set_AllCore_Frequency_Percent(nodeRequest)                 
+                if False == response.Success:
+                    errorStr = "{0} calling Set_AllCore_Frequency_Percent() to node {1}".format(response.Reason,targetNode)
+                    success = False
+        
+        fnResponse = ClusterMessages.ServiceResponse()
+        fnResponse.Success = success
+        fnResponse.Reason = errorStr
+
+        return fnResponse
+
+    def Set_Cluster_Random_Frequencies(self, request, context):
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.Empty()
+        
+        for targetNode in _NodeList:
+             with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Set_Random_Frequencies(nodeRequest)                 
+                if False == response.Success:
+                    errorStr = "{0} calling Set_Random_Frequencies() to node {1}".format(response.Reason,targetNode)
+                    success = False
+        
+        fnResponse = ClusterMessages.ServiceResponse()
+        fnResponse.Success = success
+        fnResponse.Reason = errorStr
+
+        return fnResponse
     
+    def Set_Cluster_SineWave_Frequencies(self, request, context):
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.Empty()
+        
+        for targetNode in _NodeList:
+             with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Set_SineWave_Frequencies(nodeRequest)                 
+                if False == response.Success:
+                    errorStr = "{0} calling Set_SineWave_Frequencies() to node {1}".format(response.Reason,targetNode)
+                    success = False
+        
+        fnResponse = ClusterMessages.ServiceResponse()
+        fnResponse.Success = success
+        fnResponse.Reason = errorStr
+
+        return fnResponse
+
 def runAsService(hostAddr,hostPort):
-    print("Launching as service at {0}:{1}. Version: {2}".format(hostAddr,hostPort,VersionStr))
+    print("Launching Cluster Frequency Manager at {0}:{1}. Version: {2}".format(hostAddr,hostPort,VersionStr))
 
     try:
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -45,6 +126,7 @@ def runAsService(hostAddr,hostPort):
         server.add_insecure_port(hostAddr +':' + str(hostPort))
         server.start()
         logger.debug("CFM Started")
+
     except Exception as Ex:
         logger.error("Error Starting CFM:")
         logger.error(str(Ex))
@@ -53,7 +135,7 @@ def runAsService(hostAddr,hostPort):
     # server returns, so let's just spin for a while
     try:
         while True:
-            time.sleep(1000)
+            SleepMs(1000)
 
     except KeyboardInterrupt:
         server.stop(0)
@@ -76,11 +158,30 @@ def validateNodes(nodeList):
             logger.error("NFM node must be in form of ip:port")
             return False
 
-        retArray.append({ip:port})
+        retArray.append(entry)
 
     return retArray            
 
+def test():
+        global _NodeList
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.Empty()
+        
+        try:
+            for targetNode in _NodeList:
+                with grpc.insecure_channel(targetNode) as channel:
+                    rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                    response = rpcStub.Set_SineWave_Frequencies(nodeRequest)                 
+                    if False == response.Success:
+                        errorStr = "{0} calling Set_SineWave_Frequencies() to node {1}".format(response.Reason,targetNode)
+                        success = False
+        except Exception as ex:
+            print(str(ex))
+
 def main():
+    global _NodeList
     parser = argparse.ArgumentParser(description='Cluster Frequency Manager')
     parser.add_argument("-c","--connect",help="ip:port to listen on.",type=str,required=False)
     parser.add_argument("-v","--verbose",help="prints information, values 0-3",type=int)
@@ -112,15 +213,17 @@ def main():
 
     logging.basicConfig(level=_VerboseLevel,format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%m-%d %H:%M')
 
+
     if len(args.nodes) < 1:
         print("ERROR: You must specify at least one target NFM Node.")
         return
 
-    nodeMap = validateNodes(args.nodes)
-    if False == nodeMap:
+    _NodeList = validateNodes(args.nodes)
+    if False == _NodeList:
         return
 
-    print(nodeMap)
+    test()
+
     if None == args.connect:
         args.connect = "0.0.0.0:6000"
         logger.info("Connection information not provided, using default: " + args.connect)
