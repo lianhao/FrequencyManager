@@ -1,9 +1,10 @@
 # Use an official Python runtime as a parent image
-FROM python:3.6-slim
-# Disables buffered output - for logging
+FROM python:3.7-slim
+
 RUN mkdir ClusterFrequencyManager && \
-pip install grpcio-tools googleapis-common-protos  &&\
-cp *.py *.proto NodeFrequencyManager/
+pip install grpcio-tools googleapis-common-protos
+
+COPY *.py *.proto ClusterFrequencyManager/
 
 WORKDIR ClusterFrequencyManager
 RUN python run_codegen.py

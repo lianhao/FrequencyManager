@@ -1,0 +1,4 @@
+this tool requires gRPC goodies.  Do a pip insall -r Requirements.txt to get all the necessary stuff.
+Only tested with Python 3.6+
+
+Copy the rpcCMF.proto file from the grpcProtobuff directory above this one.  Then run the run_codegen.py script to generate the gRPC boilerplate and you should be ready to go!
