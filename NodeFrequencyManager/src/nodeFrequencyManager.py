@@ -1,3 +1,34 @@
+#
+#   BSD LICENSE
+# 
+#   Copyright(c) 2007-2019 Intel Corporation. All rights reserved.
+#   All rights reserved.
+# 
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions
+#   are met:
+# 
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in
+#       the documentation and/or other materials provided with the
+#       distribution.
+#     * Neither the name of Intel Corporation nor the names of its
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+# 
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# 
 import os
 import time
 import argparse
@@ -14,7 +45,7 @@ coreCount = 0
 errorStr=""
 sysFreqInfo={}
 
-VersionStr="19.02.21 Build 1"
+VersionStr="19.02.21 Build 2"
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +75,9 @@ def ReadFromFile(Filename):
     return file.read().strip()
     
 def WriteToFile(Filename,value):
+    global errorStr
+    errorStr = "OK"
+
     try:
         value=str(value)
         file = open(Filename,'wt')
@@ -52,9 +86,9 @@ def WriteToFile(Filename,value):
 
         file.write(value)
         file.close()
+        logger.info("Success Writing [{0} to File: {1}".format(value,Filename))
         
     except Exception as Ex:
-        global errorStr
         errorStr = "Error Writing [{0} to File: {1}: {2}".format(value,Filename,Ex)
         logger.error("Error Writing [{0} to File: {1}: {2}".format(value,Filename,Ex))
         return False
@@ -104,9 +138,6 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         if coreNum < 0 or coreNum > coreCount-1:
             errorStr = "Invalid Core Number {} specified".format(coreNum)
             return False
-            
-        if WriteToFile(GetBaseDir() + "/cpu"  + str(coreNum) + "/cpufreq/" + stat,value):
-            return True
 
         return WriteToFile(GetBaseDir() + "/cpu"  + str(coreNum) + "/cpufreq/" + stat,value)
         
@@ -114,13 +145,13 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         global coreCount,errorStr
         if coreNum < 0 or coreNum > coreCount-1:
             errorStr = "Invalid Core Number {} specified".format(coreNum)
-            return -1
+            return False
             
         return self._getCoreFrequencyStat(coreNum,"cpuinfo_cur_freq")
         
     def _setCoreFrequency(self,coreNum,frequency):
         global coreCount, errorStr
-
+        errorStr = "OK"
         try:
             coreNum = int(coreNum)
             frequency = int(frequency)
@@ -151,8 +182,9 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         return self._setCoreFrequencyStat(coreNum,"scaling_min_freq",frequency)
 
     def _setCoreFrequencyPercent(self,coreNum,percentage):
-        global coreCount
+        global coreCount, errorStr
         if coreNum < 0 or coreNum > coreCount-1:
+            errorStr = "Invalid coreNum: {0}".format(coreNum)
             return False
             
         coreMin = int(self._getCoreFrequencyStat(coreNum,"cpuinfo_min_freq"))
@@ -162,29 +194,53 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         return self._setCoreFrequency(coreNum,restultingFreq)
             
     def _setAllCoreFrequency(self,frequency):
-        for coreNum in range(0,coreCount):
-            self._setCoreFrequency(coreNum,frequency)
+        global errorStr
+        retCode = True
+        errCode = "OK"
 
-        return True
+        for coreNum in range(0,coreCount):
+            if False == self._setCoreFrequency(coreNum,frequency):
+                retCode = False
+                errCode = errorStr
+
+        errorStr = errCode
+        return retCode
 
     def _setAllCoreFrequencyPercent(self,Percent):
+        global errorStr
+        retCode = True
+        errCode = "OK"
+
         for coreNum in range(0,coreCount):
             if False == self._setCoreFrequencyPercent(coreNum,Percent):
-                global errorStr
-                logger.error(errorStr)
+                retCode = False
+                errCode = errorStr
                 
-        return True
+        errorStr = errCode
+        return retCode
                 
     def _doRandom(self):
         import random
+        global errorStr
+        retCode = True
+        errCode = "OK"
+
         for coreNum in range(0,coreCount):
             percent = random.randint(0,100)
-            if not self._setCoreFrequencyPercent(coreNum,percent):
-                pass
-                #print (coreNum,percent)
+            if False == self._setCoreFrequencyPercent(coreNum,percent):
+                retCode = False
+                errCode = errorStr
+            
+                
+        errorStr = errCode
+        return retCode
                 
     def _doSine(self):
         from math import sin,pi
+        global errorStr
+
+        retCode = True
+        errCode = "OK"
 
         Fs=8000
         f=500
@@ -194,7 +250,13 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
             a[n]=sin(2*pi*f*n/Fs)/2
         
         for coreNum in range(0,coreCount):
-            self._setCoreFrequencyPercent(coreNum,a[coreNum]*100 + 50)
+            if False == self._setCoreFrequencyPercent(coreNum,a[coreNum]*100 + 50):
+                global errorStr
+                retCode = False
+                errCode = errorStr
+                
+        errorStr = errCode
+        return retCode
 
     def Set_Core_Frequency(self, request, context):
         logger.info("Processing Set_Core_Frequency request")
@@ -257,24 +319,29 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         return response
 
     def Set_Random_Frequencies(self, request, context):
-        logger.info("Setting frequencies to reandom pattern")
+        global errorStr
+        errorStr = "OK"
+        logger.info("Setting frequencies to random pattern")
         response = messagesNFD.ServiceResponse()
-        self._doRandom()
-        response.Success = True
-        response.Reason = "OK"
+        
+        response.Success = self._doRandom()
+        response.Reason = errorStr
 
         return response
 
     def Set_SineWave_Frequencies(self, request, context):
+        global errorStr
+        errorStr = "OK"
         logger.info("Setting frequencies to sine wave pattern")
         response = messagesNFD.ServiceResponse()
-        self._doSine()
-        response.Success = True
-        response.Reason = "OK"
+        
+        response.Success = self._doSine()
+        response.Reason = errorStr
 
         return response
     
 def runAsService(hostAddr,hostPort):
+    global VersionStr
     print("Launching Node Frequency Manager at {0}:{1}. Version: {2}".format(hostAddr,hostPort,VersionStr))
 
     try:
@@ -289,7 +356,7 @@ def runAsService(hostAddr,hostPort):
     try:
         server.add_insecure_port(hostAddr +':' + str(hostPort))
         server.start()
-        logger.debug("NFM Started")
+        logger.info("NFM {0} Started".format(VersionStr))
     except Exception as Ex:
         logger.error("Error Starting NFM:")
         logger.error(str(Ex))

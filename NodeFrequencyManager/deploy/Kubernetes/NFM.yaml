@@ -1,10 +1,10 @@
+### Service Definition
 kind: Service
 apiVersion: v1
 metadata:
   name: node-frequency-manager
   namespace: default
   labels:
-    #locale: appremote
     service: NodeFrequencyManager
 
 spec:
@@ -15,8 +15,9 @@ spec:
   ports:
   - protocol: TCP
     port: 5000
-    nodePort: 50000
+    nodePort: 50001
 ---
+### Pod, exposed by service
 apiVersion: v1
 kind: Pod
 metadata:
@@ -39,8 +40,22 @@ spec:
     env:
     - name: PYTHONUNBUFFERED
       value: "0"        
+      
     ports:
     - name: app-port 
       containerPort: 5000
-      
+     
+    volumeMounts:
+    - name: sysfs                                                                                                                            
+      mountPath: /sys/devices/system/cpu/                                                                                                                        
+      readOnly: false 
 
+    securityContext: #So we can write to /sys
+      allowPrivilegeEscalation: true
+      privileged: true
+      
+  volumes:
+  - name: sysfs
+    hostPath:
+      path: /sys/devices/system/cpu/ #only access what is required
+ 
