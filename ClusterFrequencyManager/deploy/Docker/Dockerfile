@@ -10,7 +10,6 @@ COPY *.py *.proto NodeFrequencyManager/
 
 
 WORKDIR NodeFrequencyManager
-RUN ls
 RUN python run_codegen.py
 
 ENTRYPOINT  ["python", "nodeFrequencyManager.py"]

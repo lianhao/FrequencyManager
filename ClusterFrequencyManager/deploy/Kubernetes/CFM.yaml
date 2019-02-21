@@ -1,47 +1,47 @@
+### Service Definition
 kind: Service
 apiVersion: v1
 metadata:
-  name: node-frequency-manager
+  name: cluster-frequency-manager
   namespace: default
   labels:
-    #locale: appremote
-    service: NodeFrequencyManager
+    service: ClusterFrequencyManager
 
 spec:
   type: NodePort
   selector:
-    app: node-frequency-manager
+    app: cluster-frequency-manager
     
   ports:
   - protocol: TCP
     port: 5000
-    nodePort: 51000 
+    nodePort: 50002
 ---
-
+### Pod, exposed by service
 apiVersion: v1
 kind: Pod
 metadata:
-  name: node-frequency-manager
+  name: cluster-frequency-manager
   namespace: default  
   labels:
-    app: node-frequency-manager
+    app: cluster-frequency-manager
 
 spec:
-  tolerations:
-  - key: "cmk"
-    operator: "Exists"
-
   containers:
-  - name: node-frequency-manager
-    image: patrickkutch/nodefrequencymanager
+  - name: cluster-frequency-manager
+    image: patrickkutch/clusterfrequencymanager
     imagePullPolicy: Always    
-    args: ["-c", "0.0.0.0:5000"]          
+    #Must add the connection points to the NFD targets here:  Example:
+    #args: ["-c", "0.0.0.0:5000", "-v","4","vcmts-master-1:50001",""vcmts-master-2:50001"]          
+
+    args: ["-c", "0.0.0.0:5000", "-v","4"]          
 
     env:
     - name: PYTHONUNBUFFERED
       value: "0"        
+      
     ports:
     - name: app-port 
       containerPort: 5000
-      
-
+     
+ 
