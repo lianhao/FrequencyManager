@@ -62,6 +62,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         pass
 
     def Set_Cluster_Core_Frequency(self, request, context):
+        logger.info("running Set_Cluster_Core_Frequency()")
         errorStr="OK"    
         success = True
 
@@ -73,6 +74,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
                 response = rpcStub.Set_All_Core_Frequency(nodeRequest)                 
                 if False == response.Success:
                     errorStr = "{0} calling Set_AllCore_Frequency() to node {1}".format(response.Reason,targetNode)
+                    logger.error(errorStr)
                     success = False
         
         fnResponse = ClusterMessages.ServiceResponse()
@@ -82,6 +84,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         return fnResponse
 
     def Set_Cluster_Core_Frequency_Percent(self, request, context):
+        logger.info("running Set_Cluster_Core_Frequency_Percent()")
         errorStr="OK"    
         success = True
 
@@ -94,6 +97,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
                 response = rpcStub.Set_All_Core_Percent_Frequency(nodeRequest)                 
                 if False == response.Success:
                     errorStr = "{0} calling Set_AllCore_Frequency_Percent() to node {1}".format(response.Reason,targetNode)
+                    logger.error(errorStr)
                     success = False
         
         fnResponse = ClusterMessages.ServiceResponse()
@@ -103,6 +107,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         return fnResponse
 
     def Set_Cluster_Random_Frequencies(self, request, context):
+        logger.info("running Set_Cluster_Random_Frequencies()")
         errorStr="OK"    
         success = True
 
@@ -114,6 +119,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
                 response = rpcStub.Set_Random_Frequencies(nodeRequest)                 
                 if False == response.Success:
                     errorStr = "{0} calling Set_Random_Frequencies() to node {1}".format(response.Reason,targetNode)
+                    logger.error(errorStr)
                     success = False
         
         fnResponse = ClusterMessages.ServiceResponse()
@@ -123,6 +129,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         return fnResponse
     
     def Set_Cluster_SineWave_Frequencies(self, request, context):
+        logger.info("running Set_Cluster_SineWave_Frequencies()")
         errorStr="OK"    
         success = True
 
@@ -134,6 +141,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
                 response = rpcStub.Set_SineWave_Frequencies(nodeRequest)                 
                 if False == response.Success:
                     errorStr = "{0} calling Set_SineWave_Frequencies() to node {1}".format(response.Reason,targetNode)
+                    logger.error(errorStr)
                     success = False
         
         fnResponse = ClusterMessages.ServiceResponse()
@@ -143,6 +151,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         return fnResponse
 
 def runAsService(hostAddr,hostPort):
+    global VersionStr
     print("Launching Cluster Frequency Manager at {0}:{1}. Version: {2}".format(hostAddr,hostPort,VersionStr))
 
     try:
@@ -193,24 +202,6 @@ def validateNodes(nodeList):
         retArray.append(entry)
 
     return retArray            
-
-def test():
-        global _NodeList
-        errorStr="OK"    
-        success = True
-
-        nodeRequest = NodeMessages.Empty()
-        
-        try:
-            for targetNode in _NodeList:
-                with grpc.insecure_channel(targetNode) as channel:
-                    rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-                    response = rpcStub.Set_Random_Frequencies(nodeRequest)                 
-                    if False == response.Success:
-                        errorStr = "{0} calling Set_SineWave_Frequencies() to node {1}".format(response.Reason,targetNode)
-                        success = False
-        except Exception as ex:
-            print(str(ex))
 
 def main():
     global _NodeList
