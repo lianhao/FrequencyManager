@@ -25,9 +25,9 @@ package intel.node.frequency;
 service NodeFrequencyManagerService
 {
     rpc Set_Core_Frequency(SetFrequencyRequest) returns (ServiceResponse) {};
-    rpc Set_AllCore_Frequency(SetFrequencyRequest) returns (ServiceResponse) {};
+    rpc Set_All_Core_Frequency(SetFrequencyRequest) returns (ServiceResponse) {};
     rpc Set_Core_Percent_Frequency(SetFrequencyPercentRequest) returns (ServiceResponse) {};
-    rpc Set_All_CorePercent_Frequency(SetFrequencyPercentRequest) returns (ServiceResponse) {};
+    rpc Set_All_Core_Percent_Frequency(SetFrequencyPercentRequest) returns (ServiceResponse) {};
     rpc Get_Core_Frequency_Info(CoreNumber) returns (CoreFrequencyInfo) {};
     rpc Set_Random_Frequencies(Empty) returns (ServiceResponse) {};
     rpc Set_SineWave_Frequencies(Empty) returns (ServiceResponse) {};

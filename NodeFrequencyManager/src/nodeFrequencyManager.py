@@ -235,7 +235,7 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         response = messagesNFD.ServiceResponse()
         errorStr="OK"
 
-        responseCode = self._setAllCoreFrequencyPercent(request.frequency)
+        responseCode = self._setAllCoreFrequencyPercent(request.Frequency)
         response.Success = responseCode
         response.Reason = errorStr
 
@@ -259,7 +259,7 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
 
     def Set_Random_Frequencies(self, request, context):
         logger.info("Setting frequencies to reandom pattern")
-        response = messagesNFD.CoreFrequencyInfo()
+        response = messagesNFD.ServiceResponse()
         self._doRandom()
         response.Success = True
         response.Reason = "OK"

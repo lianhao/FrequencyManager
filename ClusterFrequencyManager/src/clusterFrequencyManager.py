@@ -39,7 +39,7 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         for targetNode in _NodeList:
              with grpc.insecure_channel(targetNode) as channel:
                 rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-                response = rpcStub.Set_AllCore_Frequency(nodeRequest)                 
+                response = rpcStub.Set_All_Core_Frequency(nodeRequest)                 
                 if False == response.Success:
                     errorStr = "{0} calling Set_AllCore_Frequency() to node {1}".format(response.Reason,targetNode)
                     success = False
@@ -56,10 +56,11 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
 
         nodeRequest = NodeMessages.SetFrequencyPercentRequest()
         nodeRequest.Frequency = request.Frequency
+        
         for targetNode in _NodeList:
              with grpc.insecure_channel(targetNode) as channel:
                 rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-                response = rpcStub.Set_AllCore_Frequency_Percent(nodeRequest)                 
+                response = rpcStub.Set_All_Core_Percent_Frequency(nodeRequest)                 
                 if False == response.Success:
                     errorStr = "{0} calling Set_AllCore_Frequency_Percent() to node {1}".format(response.Reason,targetNode)
                     success = False
@@ -173,7 +174,7 @@ def test():
             for targetNode in _NodeList:
                 with grpc.insecure_channel(targetNode) as channel:
                     rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-                    response = rpcStub.Set_SineWave_Frequencies(nodeRequest)                 
+                    response = rpcStub.Set_Random_Frequencies(nodeRequest)                 
                     if False == response.Success:
                         errorStr = "{0} calling Set_SineWave_Frequencies() to node {1}".format(response.Reason,targetNode)
                         success = False
@@ -222,7 +223,7 @@ def main():
     if False == _NodeList:
         return
 
-    test()
+#    test()
 
     if None == args.connect:
         args.connect = "0.0.0.0:6000"

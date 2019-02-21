@@ -1,0 +1,87 @@
+//##############################################################################
+//#  Copyright (c) 2019 Intel Corporation
+//# 
+//# Licensed under the Apache License, Version 2.0 (the "License");
+//#  you may not use this file except in compliance with the License.
+//#  You may obtain a copy of the License at
+//# 
+//#      http://www.apache.org/licenses/LICENSE-2.0
+//# 
+//#  Unless required by applicable law or agreed to in writing, software
+//#  distributed under the License is distributed on an "AS IS" BASIS,
+//#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//#  See the License for the specific language governing permissions and
+//#  limitations under the License.
+//##############################################################################
+//#    File Abstract: 
+//#    This is the main/entry point file for the Minion data collector program
+//#
+//##############################################################################
+syntax = "proto3";
+
+package intel.cluster.frequency;
+
+// Interface exported by our 'Services'
+service ClusterFrequencyManagerService
+{
+    rpc Set_Cluster_Core_Frequency(SetClusterFrequencyRequest) returns (ServiceResponse) {};
+    rpc Set_Cluster_Core_Frequency_Percent(SetClusterFrequencyPercentRequest) returns (ServiceResponse) {};
+    rpc Set_Cluster_Random_Frequencies(Empty) returns (ServiceResponse) {};
+    rpc Set_Cluster_SineWave_Frequencies(Empty) returns (ServiceResponse) {};
+
+    rpc Set_Node_Core_Frequency(SetNodeCoreFrequencyRequest) returns (ServiceResponse);
+    rpc Set_Node_Core_Frequency_Percent(SetNodeCoreFrequencyPercentRequest) returns (ServiceResponse);
+    rpc Set_Node_Random_Frequencies(NodeIdentifier) returns (ServiceResponse) {};
+    rpc Set_Node_SineWave_Frequencies(NodeIdentifier) returns (ServiceResponse) {};
+
+    rpc Get_Cluster_Nodelist(Empty) returns (ServiceResponse) {};
+    rpc Get_Node_Core_Info(NodeIdentifier) returns (ServiceResponse) {};
+}
+
+message SetClusterFrequencyRequest
+{
+    int32 Frequency = 1;
+}
+
+message SetClusterFrequencyPercentRequest
+{
+    float Frequency = 1;
+}
+
+message SetNodeCoreFrequencyRequest
+{
+    string Node_ID = 1;
+    int32 CoreNumber = 2;
+    int32 Frequency = 3;
+}
+
+message SetNodeCoreFrequencyPercentRequest
+{
+    string Node_ID = 1;
+    int32 CoreNumber = 2;
+    float Frequency = 3;
+}
+
+message CoreFrequencyInfo
+{
+    ServiceResponse Response = 1;
+    int32 CoreNumber = 2;
+    int32 MaxFrequency = 3;
+    int32 MinFrequency = 4;
+    int32 CurrentFrequency = 5;
+}
+
+message NodeIdentifier
+{
+    string Node_ID = 1;
+}
+
+message ServiceResponse
+{
+    bool Success = 1;
+    string Reason = 2;
+}
+
+message Empty
+{
+}
