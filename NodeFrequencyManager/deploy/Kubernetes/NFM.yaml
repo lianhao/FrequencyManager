@@ -35,7 +35,7 @@ spec:
   - name: node-frequency-manager
     image: patrickkutch/nodefrequencymanager
     imagePullPolicy: Always    
-    args: ["-c", "0.0.0.0:5000","-v 4"]          
+    args: ["-c", "0.0.0.0:5000", "-v 4"]          
 
     env:
     - name: PYTHONUNBUFFERED
