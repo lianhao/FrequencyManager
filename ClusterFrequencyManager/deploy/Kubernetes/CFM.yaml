@@ -33,7 +33,6 @@ spec:
     imagePullPolicy: Always    
     #Must add the connection points to the NFD targets here:  Example:
     #args: ["-c", "0.0.0.0:5000", "-v","4","vcmts-master-1:50001",""vcmts-master-2:50001"]          
-
     args: ["-c", "0.0.0.0:5000", "-v","4"]          
 
     env:
