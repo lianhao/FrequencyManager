@@ -14,7 +14,7 @@ coreCount = 0
 errorStr=""
 sysFreqInfo={}
 
-VersionStr="19.02.20 Build 2"
+VersionStr="19.02.21 Build 1"
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,10 @@ def WriteToFile(Filename,value):
     except Exception as Ex:
         global errorStr
         errorStr = "Error Writing [{0} to File: {1}: {2}".format(value,Filename,Ex)
+        logger.error("Error Writing [{0} to File: {1}: {2}".format(value,Filename,Ex))
         return False
         
     return True
-    #return file.write(read().strip()
 
 class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
     def __init__(self):
@@ -88,8 +88,6 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
                             key = "{0}.{1}".format(cpuDir,file)
                             
                             retMap[key] = ReadFromFile(readFile)
-                            
-        
         
         return retMap
         
@@ -101,19 +99,21 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         return ReadFromFile(GetBaseDir() + "/cpu"  + str(coreNum) + "/cpufreq/" + stat)
 
     def _setCoreFrequencyStat(self,coreNum,stat,value):
-        global coreCount
+        global coreCount,errorStr
         
         if coreNum < 0 or coreNum > coreCount-1:
-            return -1
+            errorStr = "Invalid Core Number {} specified".format(coreNum)
+            return False
             
         if WriteToFile(GetBaseDir() + "/cpu"  + str(coreNum) + "/cpufreq/" + stat,value):
             return True
+
         return WriteToFile(GetBaseDir() + "/cpu"  + str(coreNum) + "/cpufreq/" + stat,value)
         
-        
     def _getCoreCurrentFrequency(self,coreNum):
-        global coreCount
+        global coreCount,errorStr
         if coreNum < 0 or coreNum > coreCount-1:
+            errorStr = "Invalid Core Number {} specified".format(coreNum)
             return -1
             
         return self._getCoreFrequencyStat(coreNum,"cpuinfo_cur_freq")
@@ -149,7 +149,6 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
             return self._setCoreFrequencyStat(coreNum,"scaling_max_freq",frequency)
             
         return self._setCoreFrequencyStat(coreNum,"scaling_min_freq",frequency)
-        
 
     def _setCoreFrequencyPercent(self,coreNum,percentage):
         global coreCount
@@ -274,7 +273,6 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         response.Reason = "OK"
 
         return response
-
     
 def runAsService(hostAddr,hostPort):
     print("Launching Node Frequency Manager at {0}:{1}. Version: {2}".format(hostAddr,hostPort,VersionStr))
@@ -304,34 +302,6 @@ def runAsService(hostAddr,hostPort):
 
     except KeyboardInterrupt:
         server.stop(0)
-
-
-# Go initialize some stuff to be used later            
-#sysFreqInfo = getFrequencyInfo()
-
-#SetAllCoreFrequencyPercent(43)
-#SetAllCoreFrequencyPercent(1)
-#doRandom()
-
-#raw_input(" Press Key to set to Min")
-#SetAllCoreFrequencyPercent(0)
-
-#raw_input("Press Key to set to half")
-#SetAllCoreFrequencyPercent(50)
-
-#raw_input("Press Key to set to full")
-#SetAllCoreFrequencyPercent(100)
-
-#raw_input("Press Key to set to pretty")
-#doSine()
-#doRandom()
-
-#if False:
-#  for percent in range (0,101,10):
-#    print("Setting All Cores Frequency to {0} percent".format(percent))
-#    SetAllCoreFrequencyPercent(percent)
-#    Sleep(4)
-    
 
 def main():
     parser = argparse.ArgumentParser(description='Node Frequency Manager')
