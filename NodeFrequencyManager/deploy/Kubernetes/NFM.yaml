@@ -15,7 +15,7 @@ spec:
   ports:
   - protocol: TCP
     port: 5000
-    nodePort: 51000 
+    nodePort: 50000 
 ---
 
 apiVersion: v1
