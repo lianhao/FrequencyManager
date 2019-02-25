@@ -302,7 +302,7 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
 
         return response
 
-    def Get_Core_FrequencyInfo(self, request, context):
+    def Get_Core_Frequency_Info(self, request, context):
         logger.info("Processing Get_Core_Frequency request")
 
         response = messagesNFD.CoreFrequencyInfo()
@@ -310,14 +310,13 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         response.CoreNumber = request.CoreNumber
         response.MaxFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_max_freq"))
         response.MinFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_min_freq"))
-        response.CurrentFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"scaling_cur_freq"))
-        successResp = messagesNFD.ServiceResponse()
-        successResp.Success = errorStr == "OK"
-        successResp.Reason = errorStr
-        response.Response = successResp
+        response.CurrentFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_cur_freq"))
+        
+        response.Response.Success = errorStr == "OK"
+        response.Response.Reason = errorStr
 
         return response
-
+        
     def Set_Random_Frequencies(self, request, context):
         global errorStr
         errorStr = "OK"

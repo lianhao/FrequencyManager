@@ -34,8 +34,8 @@ service ClusterFrequencyManagerService
     rpc Set_Node_Random_Frequencies(NodeIdentifier) returns (ServiceResponse) {};
     rpc Set_Node_SineWave_Frequencies(NodeIdentifier) returns (ServiceResponse) {};
 
-    rpc Get_Cluster_Nodelist(Empty) returns (ServiceResponse) {};
-    rpc Get_Node_Core_Info(NodeIdentifier) returns (ServiceResponse) {};
+    rpc Get_Cluster_Nodelist(Empty) returns (NodeListResponse) {};
+    rpc Get_Node_Frequency_Range(NodeIdentifier) returns (CoreFrequencyInfo) {};
 }
 
 message SetClusterFrequencyRequest
@@ -70,6 +70,12 @@ message CoreFrequencyInfo
     int32 MinFrequency = 4;
     int32 CurrentFrequency = 5;
 }
+
+message NodeListResponse
+{
+    ServiceResponse Response = 1;
+    repeated NodeIdentifier Node = 2;
+}    
 
 message NodeIdentifier
 {

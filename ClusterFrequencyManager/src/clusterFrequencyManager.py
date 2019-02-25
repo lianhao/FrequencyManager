@@ -150,6 +150,61 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
 
         return fnResponse
 
+    def Get_Cluster_Nodelist(self, request, context):
+        logger.info("Get_Cluster_Nodelist()")
+        nodeListResponse = ClusterMessages.NodeListResponse()
+
+        nodeListResponse.Response.Success = True
+        nodeListResponse.Response.Reason = "OK"
+
+        for targetNode in _NodeList:
+            nodeID = nodeListResponse.Node.add()
+            nodeID.Node_ID = targetNode.split(":")[0]
+            #nodeListResponse.Node.(nodeID)
+
+        return nodeListResponse
+
+    def Get_Node_Frequency_Range(self, request, context):        
+        logger.info("running Get_Node_Frequency_Range()")
+        fnResponse = ClusterMessages.CoreFrequencyInfo()
+
+        validTarget = False
+        for targetNode in _NodeList:
+            if request.Node_ID == targetNode.split(":")[0]:
+                validTarget = True
+                break
+
+        if False == validTarget:
+            fnResponse.Response.Success = False
+            fnResponse.Response.Reason = "Node {} is not valid".format(request.Node_ID)
+
+            return fnResponse
+
+
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.CoreNumber()
+        nodeRequest.CoreNumber = 0 # just go ask for a core
+        
+        with grpc.insecure_channel(targetNode) as channel:
+            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+            response = rpcStub.Get_Core_Frequency_Info(nodeRequest)                 
+            if False == response.Response.Success:
+                errorStr = "{0} calling Get_Core_Frequency_Info() to node {1}".format(response.Response.Reason,targetNode)
+                logger.error(errorStr)
+                success = False
+        
+        fnResponse.Response.Success = success
+        fnResponse.Response.Reason = errorStr
+
+        fnResponse.CoreNumber = response.CoreNumber
+        fnResponse.MaxFrequency = response.MaxFrequency
+        fnResponse.MinFrequency = response.MinFrequency
+        fnResponse.CurrentFrequency = 0
+
+        return fnResponse
+
 def runAsService(hostAddr,hostPort):
     global VersionStr
     print("Launching Cluster Frequency Manager at {0}:{1}. Version: {2}".format(hostAddr,hostPort,VersionStr))

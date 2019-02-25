@@ -99,6 +99,48 @@ def Set_Cluster_Frequency_Sinewave(target):
         errorStr = "{0} calling Set_Cluster_SineWave_Frequencies()".format(ex)
         logger.error(errorStr)
 
+def Get_NodeList(target):
+    ClusterRequest = ClusterMessages.Empty()
+    
+    try:
+        with grpc.insecure_channel(target) as channel:
+            rpcStub = ClusterRPC.ClusterFrequencyManagerServiceStub(channel)
+            response = rpcStub.Get_Cluster_Nodelist(ClusterRequest)                 
+            if False == response.Response.Success:
+                errorStr = "{0} calling Get_Cluster_Nodelist()".format(response.Response.Reason)
+                logger.error(errorStr)
+
+            else:
+                logger.info("Successful call to Get_Cluster_Nodelist()")
+                print("--- Node Frequency Manager Nodes ---")
+                for node in response.Node:
+                    print(node.Node_ID)
+                
+
+    except Exception as ex:
+        errorStr = "{0} calling Get_Cluster_Nodelist()".format(ex)
+        logger.error(errorStr)
+
+def Get_Node_Frequency_Info(target,NodeName):
+    ClusterRequest = ClusterMessages.NodeIdentifier()
+    ClusterRequest.Node_ID = NodeName
+    
+    try:
+        with grpc.insecure_channel(target) as channel:
+            rpcStub = ClusterRPC.ClusterFrequencyManagerServiceStub(channel)
+            response = rpcStub.Get_Node_Frequency_Range(ClusterRequest)                 
+            if False == response.Response.Success:
+                errorStr = "{0} calling Get_Node_Frequency_Range()".format(response.Response.Reason)
+                logger.error(errorStr)
+
+            else:
+                logger.info("Successful call to Get_Node_Frequency_Range()")
+                print("Node {} Frequency Range: Max: {} Min:{}".format(NodeName,response.MaxFrequency,response.MinFrequency))
+                
+
+    except Exception as ex:
+        errorStr = "{0} calling Get_Node_Frequency_Range()".format(ex)
+        logger.error(errorStr)
 
 def Set_Cluster_Frequency_Random(target):
     ClusterRequest = ClusterMessages.Empty()
@@ -124,6 +166,8 @@ def main():
     parser.add_argument("-v","--verbose",help="prints information, values 0-3",type=int)
     
     cmdGroup = parser.add_mutually_exclusive_group()
+    cmdGroup.add_argument('--getnodes',help='returns list of all registered NFM nodes',action='store_true')
+    cmdGroup.add_argument('--getnodefrequencyrange',help='get frequency range of CPU on node',type=str)
     cmdGroup.add_argument('--randomize',help='randomize all core frequencies in cluster',action='store_true')
     cmdGroup.add_argument('--sinewave',help='change all core frequencies to be in wave pattern',action='store_true')
 
@@ -175,6 +219,12 @@ def main():
 
     elif None != args.setclusterpercent:
         Set_Cluster_Frequency_Percent(target,args.setclusterpercent)        
+
+    elif args.getnodes:
+        Get_NodeList(target)
+
+    elif None != args.getnodefrequencyrange:
+        Get_Node_Frequency_Info(target,args.getnodefrequencyrange)
 
     else:
         logger.error("Nothing else supported at the moment.")
