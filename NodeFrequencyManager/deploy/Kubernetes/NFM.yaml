@@ -31,6 +31,14 @@ spec:
   - key: "cmk"
     operator: "Exists"
 
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: vcmts
+            operator: Exists
+    
   containers:
   - name: node-frequency-manager
     image: patrickkutch/nodefrequencymanager
