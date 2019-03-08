@@ -45,7 +45,7 @@ coreCount = 0
 errorStr=""
 sysFreqInfo={}
 
-VersionStr="19.02.21 Build 2"
+VersionStr="19.03.08 Build 2"
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,90 @@ def SleepMs(milliseconds):
 def GetBaseDir():
     global procInfoDir
     return procInfoDir
+
+def range_expand(s):
+    r = []
+    for i in s.split(','):
+        if '-' not in i:
+            r.append(int(i))
+        else:
+            l,h = map(int, i.split('-'))
+            r+= range(l,h+1)
+    return r    
+
+def set_max_cpu_freq(maxfreq, cpurange):
+    for x in cpurange:
+        maxName = "/sys/devices/system/cpu/cpu" + str(x) + "/cpufreq/scaling_max_freq"
+        logger.info("Writing " + str(maxfreq) + " to " + maxName)
+        if False == WriteToFile(maxName,str(maxfreq)):
+            return False
+
+    return True
+
+def get_cstates():
+	stateList = []
+	states = os.listdir("/sys/devices/system/cpu/cpu0/cpuidle/")
+	for state in states:
+		stateFileName = "/sys/devices/system/cpu/cpu0/cpuidle/" + state + "/name"
+		stateFile = open(stateFileName,'r')
+		statename = stateFile.readline().strip("\n")
+		stateList.append(statename)
+		stateFile.close()
+	return stateList
+
+
+def set_min_cpu_freq(minfreq,cpurange):
+    for x in cpurange:
+        minName = "/sys/devices/system/cpu/cpu" + str(x) + "/cpufreq/scaling_min_freq"
+        logger.info("Writing " + str(minfreq) + " to " + minName)
+        if False == WriteToFile(minName,str(minfreq)):
+            return False
+
+    return True
+
+def set_cstate(cstate,enable,cpurange):
+    # Get list of cstate dirs to iterate through to find the cstate name
+    cstates = os.listdir("/sys/devices/system/cpu/cpu0/cpuidle")
+
+    for x in cpurange:
+        for y in cstates:
+            name = ReadFromFile("/sys/devices/system/cpu/cpu0/cpuidle/" + y + "/name")
+            if (name == cstate):
+                stateName = "/sys/devices/system/cpu/cpu" + str(x) + "/cpuidle/" + str(y) + "/disable"
+                logger.info("Writing '" + str(enable) + "' to " + stateName)
+                if False == WriteToFile(stateName,str(str(enable))):
+                    return False
+
+    return True
+
+def set_cpu_freq(setfreq,cpurange):
+    for x in cpurange:
+        setName = "/sys/devices/system/cpu/cpu" + str(x) + "/cpufreq/scaling_setspeed"
+        logger.info("Writing " + str(setfreq) + " to " + setName)
+        minFile = open(setName,'r')
+        current = minFile.readline().strip("\n")
+        minFile.close()
+        if current == "<unsupported>":
+            errorStr = ("Error, cannot set frequency for core " + str(x) + " " + current + " Need '-g userspace'")
+            logger.error(errorStr)
+            return False
+        else:
+            if False == WriteToFile(setName,str(str(setfreq))):
+                return False
+
+        errorStr = "OK"
+        return True
         
+def set_governor(gov,cpurange):
+    for x in cpurange:
+        govName = "/sys/devices/system/cpu/cpu" + str(x) + "/cpufreq/scaling_governor"
+        logger.info("Writing '" + str(gov) + "' to " + govName)
+        if False == WriteToFile(govName,str(str(gov))):
+            return False
+
+    return True
+        
+
 def ReadFromFile(Filename):
     try:
         file = open(Filename,'rt')
@@ -86,11 +169,11 @@ def WriteToFile(Filename,value):
 
         file.write(value)
         file.close()
-        logger.info("Success Writing [{0} to File: {1}".format(value,Filename))
+        #logger.info("Success Writing [{0} to File: {1}".format(value,Filename))
         
     except Exception as Ex:
-        errorStr = "Error Writing [{0} to File: {1}: {2}".format(value,Filename,Ex)
-        logger.error("Error Writing [{0} to File: {1}: {2}".format(value,Filename,Ex))
+        errorStr = "Error Writing [{0}] to File: {1}: {2}".format(value,Filename,Ex)
+        #logger.error("Error Writing [{0} to File: {1}: {2}".format(value,Filename,Ex))
         return False
         
     return True
@@ -174,12 +257,14 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
             errorStr = "Cannot set core #{0} frequency to {1}, minimum is {2}".format(coreNum,frequency,coreMin)
             return False
 
+        return set_cpu_freq(frequency,[coreNum,])
+
         # Might fail if you try to set max to be > min
-        if False == self._setCoreFrequencyStat(coreNum,"scaling_max_freq",frequency):
-            self._setCoreFrequencyStat(coreNum,"scaling_min_freq",frequency)
-            return self._setCoreFrequencyStat(coreNum,"scaling_max_freq",frequency)
+        # if False == self._setCoreFrequencyStat(coreNum,"scaling_max_freq",frequency):
+        #     self._setCoreFrequencyStat(coreNum,"scaling_min_freq",frequency)
+        #     return self._setCoreFrequencyStat(coreNum,"scaling_max_freq",frequency)
             
-        return self._setCoreFrequencyStat(coreNum,"scaling_min_freq",frequency)
+        # return self._setCoreFrequencyStat(coreNum,"scaling_min_freq",frequency)
 
     def _setCoreFrequencyPercent(self,coreNum,percentage):
         global coreCount, errorStr
@@ -259,17 +344,95 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         return retCode
 
     def Set_Core_Frequency(self, request, context):
+        global errorStr
+
         logger.info("Processing Set_Core_Frequency request")
         response = messagesNFD.ServiceResponse()
         errorStr="OK"
 
-        responseCode = self._setCoreFrequency(request.coreNum,request.Frequency)
+        coreList = range_expand(request.Core_List)
+        for core in coreList:
+            responseCode = self._setCoreFrequency(core,request.Frequency)
+
+            response.Success = responseCode
+            response.Reason = errorStr
+
+        return response
+
+    def Set_Core_Percent_Frequency(self, request, context):
+        global errorStr
+
+        logger.info("Processing Set_Core_Percent_Frequency request")
+        response = messagesNFD.ServiceResponse()
+        errorStr="OK"
+
+        coreList = range_expand(request.Core_List)
+        for core in coreList:
+            responseCode = self._setCoreFrequencyPercent(core,request.Frequency)
+            response.Success = responseCode
+            response.Reason = errorStr
+
+        return response
+
+    def Set_Core_Govenor(self, request, context):
+        global errorStr
+        logger.info("Processing Set_Core_Govenor request")
+        response = messagesNFD.ServiceResponse()
+        errorStr="OK"
+
+        coreList = range_expand(request.Core_List)
+        responseCode = set_governor(request.Core_Govenor,coreList)
         response.Success = responseCode
         response.Reason = errorStr
 
         return response
-    
+
+    def Set_Core_CState(self, request, context): 
+        global errorStr
+        logger.info("Processing Set_Core_CState request")
+        response = messagesNFD.ServiceResponse()
+        errorStr="OK"
+
+        coreList = range_expand(request.Core_List)
+        
+        responseCode = set_cstate(request.Core_CState,request.State,coreList)
+        response.Success = responseCode
+        response.Reason = errorStr
+
+        return response
+
+
+    def Set_Core_Max_Frequency(self, request, context): 
+        global errorStr
+        logger.info("Processing Set_Core_Max_Frequency request")
+        response = messagesNFD.ServiceResponse()
+        errorStr="OK"
+
+        coreList = range_expand(request.Core_List)
+        
+        responseCode = set_max_cpu_freq(request.Frequency,coreList)
+        response.Success = responseCode
+        response.Reason = errorStr
+
+        return response
+
+    def Set_Core_Min_Frequency(self, request, context): 
+        global errorStr
+        logger.info("Processing Set_Core_Min_Frequency request")
+        response = messagesNFD.ServiceResponse()
+        errorStr="OK"
+
+        coreList = range_expand(request.Core_List)
+        
+        responseCode = set_min_cpu_freq(request.Frequency,coreList)
+        response.Success = responseCode
+        response.Reason = errorStr
+
+        return response
+
+
     def Set_All_Core_Frequency(self, request, context):
+        global errorStr
         logger.info("Processing Set_All_Core_Frequency request")
         response = messagesNFD.ServiceResponse()
         errorStr="OK"
@@ -279,19 +442,9 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         response.Reason = errorStr
 
         return response
-
-    def Set_Core_Percent_Frequency(self, request, context):
-        logger.info("Processing Set_Core_Percent_Frequency request")
-        response = messagesNFD.ServiceResponse()
-        errorStr="OK"
-
-        responseCode = self._setCoreFrequencyPercent(request.coreNum,request.Frequency)
-        response.Success = responseCode
-        response.Reason = errorStr
-
-        return response
-        
+       
     def Set_All_Core_Percent_Frequency(self, request, context):
+        global errorStr
         logger.info("Processing Set_All_Core_Percent_Frequency request")
         response = messagesNFD.ServiceResponse()
         errorStr="OK"
@@ -302,15 +455,37 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
 
         return response
 
+    def Get_Node_CPU_Info(self, request, context):
+        global errorStr,coreCount
+        logger.info("Processing Get_Node_CPU_Info request")
+
+        response = messagesNFD.NodeCPU_Info()
+        response.CoreCount = coreCount
+        for governor in self._getCoreFrequencyStat(0,"scaling_available_governors").split(' '):
+            response.Supported_Scaling_Governor.append(governor)
+
+        for cState in get_cstates():
+            response.Supported_CState.append(cState)
+
+        response.Response.Success = True
+        response.Response.Reason = "OK"
+
+        return response
+
     def Get_Core_Frequency_Info(self, request, context):
+        global errorStr
         logger.info("Processing Get_Core_Frequency request")
 
         response = messagesNFD.CoreFrequencyInfo()
-        errorStr="OK"
-        response.CoreNumber = request.CoreNumber
-        response.MaxFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_max_freq"))
-        response.MinFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_min_freq"))
-        response.CurrentFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_cur_freq"))
+
+        if request.CoreNumber < 0 or request.CoreNumber > coreCount-1:
+            errorStr = "Invalid coreNum: {0}".format(request.CoreNumber)
+
+        else:
+            response.MaxFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_max_freq"))
+            response.MinFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_min_freq"))
+            response.CurrentFrequency = int(self._getCoreFrequencyStat(request.CoreNumber,"cpuinfo_cur_freq"))
+            response.Current_Scaling_Governor = self._getCoreFrequencyStat(request.CoreNumber,"scaling_governor")
         
         response.Response.Success = errorStr == "OK"
         response.Response.Reason = errorStr
@@ -356,6 +531,7 @@ def runAsService(hostAddr,hostPort):
         server.add_insecure_port(hostAddr +':' + str(hostPort))
         server.start()
         logger.info("NFM {0} Started".format(VersionStr))
+
     except Exception as Ex:
         logger.error("Error Starting NFM:")
         logger.error(str(Ex))
@@ -364,7 +540,7 @@ def runAsService(hostAddr,hostPort):
     # server returns, so let's just spin for a while
     try:
         while True:
-            SleepMs(1000)
+            SleepMs(100)
 
     except KeyboardInterrupt:
         server.stop(0)

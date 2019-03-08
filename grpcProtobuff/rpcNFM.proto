@@ -24,13 +24,46 @@ package intel.node.frequency;
 // Interface exported by our 'Services'
 service NodeFrequencyManagerService
 {
-    rpc Set_Core_Frequency(SetFrequencyRequest) returns (ServiceResponse) {};
+    rpc Get_Node_CPU_Info(Empty) returns (NodeCPU_Info) {};
     rpc Set_All_Core_Frequency(SetFrequencyRequest) returns (ServiceResponse) {};
-    rpc Set_Core_Percent_Frequency(SetFrequencyPercentRequest) returns (ServiceResponse) {};
     rpc Set_All_Core_Percent_Frequency(SetFrequencyPercentRequest) returns (ServiceResponse) {}; 
-    rpc Get_Core_Frequency_Info(CoreNumber) returns (CoreFrequencyInfo) {};
     rpc Set_Random_Frequencies(Empty) returns (ServiceResponse) {};
     rpc Set_SineWave_Frequencies(Empty) returns (ServiceResponse) {};
+
+    rpc Get_Core_Frequency_Info(CoreNumber) returns (CoreFrequencyInfo) {};
+
+    rpc Set_Core_Frequency(SetCoreFrequencyRequest) returns (ServiceResponse) {};
+    rpc Set_Core_Percent_Frequency(SetCoreFrequencyPercentRequest) returns (ServiceResponse) {};
+    rpc Set_Core_Govenor(SetGovenorRequest) returns (ServiceResponse){};
+    rpc Set_Core_CState(SetCStateRequest) returns (ServiceResponse){};
+
+    rpc Set_Core_Max_Frequency(SetCoreFrequencyRequest) returns (ServiceResponse) {};
+    rpc Set_Core_Min_Frequency(SetCoreFrequencyRequest) returns (ServiceResponse) {};
+}
+
+message SetGovenorRequest
+{
+    string Core_List = 1;
+    string Core_Govenor = 2;
+}
+
+message SetCStateRequest
+{
+    string Core_List = 1;
+    string Core_CState = 2;
+    int32  State = 3;
+}
+
+message SetCoreFrequencyRequest
+{
+    string Core_List = 1;
+    int32 Frequency = 2;
+}
+
+message SetCoreFrequencyPercentRequest
+{
+    string Core_List = 1;
+    float Frequency = 2;
 }
 
 message SetFrequencyRequest
@@ -50,13 +83,21 @@ message SetFrequencyPercentRequest
     float Frequency = 2;
 }
 
+message NodeCPU_Info
+{
+    ServiceResponse Response = 1;
+    int32 CoreCount = 2;
+    repeated string Supported_Scaling_Governor = 3;
+    repeated string Supported_CState = 4; 
+}
+
 message CoreFrequencyInfo
 {
     ServiceResponse Response = 1;
-    int32 CoreNumber = 2;
-    int32 MaxFrequency = 3;
-    int32 MinFrequency = 4;
-    int32 CurrentFrequency = 5;
+    int32 MaxFrequency = 2;
+    int32 MinFrequency = 3;
+    int32 CurrentFrequency = 4;
+    string Current_Scaling_Governor = 5;
 }
 
 message ServiceResponse

@@ -40,7 +40,7 @@ import rpcNFM_pb2 as NodeMessages
 import rpcCFM_pb2_grpc as ClusterRPC
 import rpcNFM_pb2_grpc as NodeRPC
 
-VersionStr="19.02.20 Build 1"
+VersionStr="19.03.08 Build 1"
 
 logger = logging.getLogger(__name__)
 _VerboseLevel = logging.ERROR
@@ -150,6 +150,43 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
 
         return fnResponse
 
+    def Set_Node_Core_Frequency(self, objSetNodeCoreFrequencyRequest, context):
+        logger.info("running Set_Node_Core_Frequency()")
+        errorStr="OK"    
+        success = True
+
+        fnResponse = ClusterMessages.ServiceResponse()
+        nodeRequest = NodeMessages.SetCoreFrequencyRequest()
+        nodeRequest.Core_List = objSetNodeCoreFrequencyRequest.Core_List
+        nodeRequest.Frequency = objSetNodeCoreFrequencyRequest.Frequency
+
+        validTarget = False
+        for targetNode in _NodeList:
+            if objSetNodeCoreFrequencyRequest.Node_ID == targetNode.split(":")[0]:
+                validTarget = True
+                break
+
+        if False == validTarget:
+            fnResponse.Success = False
+            fnResponse.Reason = "Node {} is not valid".format(objSetNodeCoreFrequencyRequest.Node_ID)
+
+            return fnResponse
+
+        with grpc.insecure_channel(targetNode) as channel:
+            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+            response = rpcStub.Set_Core_Frequency(nodeRequest)
+            if False == response.Success:
+                errorStr = "{0} calling Set_Core_Frequency() to node {1}".format(response.Reason,targetNode)
+                logger.error(errorStr)
+                success = False
+        
+        fnResponse = ClusterMessages.ServiceResponse()
+        fnResponse.Success = success
+        fnResponse.Reason = errorStr
+
+        return fnResponse
+
+
     def Get_Cluster_Nodelist(self, request, context):
         logger.info("Get_Cluster_Nodelist()")
         nodeListResponse = ClusterMessages.NodeListResponse()
@@ -198,12 +235,169 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         fnResponse.Response.Success = success
         fnResponse.Response.Reason = errorStr
 
-        fnResponse.CoreNumber = response.CoreNumber
         fnResponse.MaxFrequency = response.MaxFrequency
         fnResponse.MinFrequency = response.MinFrequency
         fnResponse.CurrentFrequency = 0
+        fnResponse.Current_Scaling_Governor = "N/A"
 
         return fnResponse
+
+    def Get_Node_Core_Info(self, request, context):        
+        logger.info("running Get_Node_Core_Info()")
+        fnResponse = ClusterMessages.CoreFrequencyInfo()
+
+        validTarget = False
+        for targetNode in _NodeList:
+            if request.Node_ID == targetNode.split(":")[0]:
+                validTarget = True
+                break
+
+        if False == validTarget:
+            fnResponse.Response.Success = False
+            fnResponse.Response.Reason = "Node {} is not valid".format(request.Node_ID)
+
+            return fnResponse
+
+
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.CoreNumber()
+        nodeRequest.CoreNumber = request.CoreNumber
+        
+        with grpc.insecure_channel(targetNode) as channel:
+            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+            response = rpcStub.Get_Core_Frequency_Info(nodeRequest)                 
+            if False == response.Response.Success:
+                errorStr = "{0} calling Get_Node_Core_Info() to node {1}".format(response.Response.Reason,targetNode)
+                logger.error(errorStr)
+                success = False
+        
+        fnResponse.Response.Success = success
+        fnResponse.Response.Reason = errorStr
+
+        fnResponse.MaxFrequency = response.MaxFrequency
+        fnResponse.MinFrequency = response.MinFrequency
+        fnResponse.CurrentFrequency = response.CurrentFrequency
+        fnResponse.Current_Scaling_Governor = response.Current_Scaling_Governor
+
+        return fnResponse        
+
+    def Get_Node_CPU_Info(self, request, context):        
+        logger.info("running Get_Node_CPU_Info()")
+        fnResponse = ClusterMessages.NodeCPU_Info()
+
+        validTarget = False
+        for targetNode in _NodeList:
+            if request.Node_ID == targetNode.split(":")[0]:
+                validTarget = True
+                break
+
+        if False == validTarget:
+            fnResponse.Response.Success = False
+            fnResponse.Response.Reason = "Node {} is not valid".format(request.Node_ID)
+
+            return fnResponse
+
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.CoreNumber()
+        nodeRequest.CoreNumber = 0 # just go ask for a core
+        
+        with grpc.insecure_channel(targetNode) as channel:
+            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+            response = rpcStub.Get_Node_CPU_Info(nodeRequest)                 
+            if False == response.Response.Success:
+                errorStr = "{0} calling Get_Node_CPU_Info() to node {1}".format(response.Response.Reason,targetNode)
+                logger.error(errorStr)
+                success = False
+        
+        fnResponse.Response.Success = success
+        fnResponse.Response.Reason = errorStr
+
+        fnResponse.CoreCount = response.CoreCount
+        for gov in response.Supported_Scaling_Governor:
+            fnResponse.Supported_Scaling_Governor.append(gov)
+
+        for cState in response.Supported_CState:
+            fnResponse.Supported_CState.append(cState)
+
+        return fnResponse        
+
+    def Set_Node_Core_CState(self, objSetNodeCStateRequest, context): 
+        logger.info("running Set_Node_Core_CState()")
+        fnResponse = ClusterMessages.ServiceResponse()
+
+        validTarget = False
+        for targetNode in _NodeList:
+            if objSetNodeCStateRequest.Node_ID == targetNode.split(":")[0]:
+                validTarget = True
+                break
+
+        if False == validTarget:
+            fnResponse.Success = False
+            fnResponse.Reason = "Node {} is not valid".format(objSetNodeCStateRequest.Node_ID)
+
+            return fnResponse
+
+
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.SetCStateRequest()
+        nodeRequest.Core_List = objSetNodeCStateRequest.Core_List
+        nodeRequest.Core_CState = objSetNodeCStateRequest.Core_CState
+        nodeRequest.State = objSetNodeCStateRequest.State
+        
+        with grpc.insecure_channel(targetNode) as channel:
+            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+            response = rpcStub.Set_Core_CState(nodeRequest)                 
+            if False == response.Success:
+                errorStr = "{0} calling Set_Core_CState() to node {1}".format(response.Reason,targetNode)
+                logger.error(errorStr)
+                success = False
+        
+        fnResponse.Success = success
+        fnResponse.Reason = errorStr
+
+        return fnResponse
+
+    def Set_Node_Core_Govenor(self, objSetNodeGovenorRequest, context): 
+        logger.info("running Set_Node_Core_Govenor()")
+        fnResponse = ClusterMessages.ServiceResponse()
+
+        validTarget = False
+        for targetNode in _NodeList:
+            if objSetNodeGovenorRequest.Node_ID == targetNode.split(":")[0]:
+                validTarget = True
+                break
+
+        if False == validTarget:
+            fnResponse.Success = False
+            fnResponse.Reason = "Node {} is not valid".format(objSetNodeGovenorRequest.Node_ID)
+
+            return fnResponse
+
+        errorStr="OK"    
+        success = True
+
+        nodeRequest = NodeMessages.SetGovenorRequest()
+        nodeRequest.Core_List = objSetNodeGovenorRequest.Core_List
+        nodeRequest.Core_Govenor = objSetNodeGovenorRequest.Core_Govenor
+        
+        with grpc.insecure_channel(targetNode) as channel:
+            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+            response = rpcStub.Set_Core_Govenor(nodeRequest)                 
+            if False == response.Success:
+                errorStr = "{0} calling Set_Core_Govenor() to node {1}".format(response.Reason,targetNode)
+                logger.error(errorStr)
+                success = False
+        
+        fnResponse.Success = success
+        fnResponse.Reason = errorStr
+
+        return fnResponse        
 
 def runAsService(hostAddr,hostPort):
     global VersionStr

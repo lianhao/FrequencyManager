@@ -29,13 +29,42 @@ service ClusterFrequencyManagerService
     rpc Set_Cluster_Random_Frequencies(Empty) returns (ServiceResponse) {};
     rpc Set_Cluster_SineWave_Frequencies(Empty) returns (ServiceResponse) {};
 
+    rpc Get_Cluster_Nodelist(Empty) returns (NodeListResponse) {};
+    rpc Get_Node_CPU_Info(NodeIdentifier) returns (NodeCPU_Info) {};
+    rpc Get_Node_Frequency_Range(NodeIdentifier) returns (CoreFrequencyInfo) {};
+    rpc Get_Node_Core_Info(NodeCoreIdentifier) returns (CoreFrequencyInfo) {};
+
     rpc Set_Node_Core_Frequency(SetNodeCoreFrequencyRequest) returns (ServiceResponse);
     rpc Set_Node_Core_Frequency_Percent(SetNodeCoreFrequencyPercentRequest) returns (ServiceResponse);
+    rpc Set_Node_Core_Govenor(SetNodeGovenorRequest) returns (ServiceResponse);
+    rpc Set_Node_Core_CState(SetNodeCStateRequest) returns (ServiceResponse);
+
     rpc Set_Node_Random_Frequencies(NodeIdentifier) returns (ServiceResponse) {};
     rpc Set_Node_SineWave_Frequencies(NodeIdentifier) returns (ServiceResponse) {};
+}
 
-    rpc Get_Cluster_Nodelist(Empty) returns (NodeListResponse) {};
-    rpc Get_Node_Frequency_Range(NodeIdentifier) returns (CoreFrequencyInfo) {};
+
+message SetNodeGovenorRequest
+{
+    string Node_ID = 1;
+    string Core_List = 2;
+    string Core_Govenor = 3;
+}
+
+message SetNodeCStateRequest
+{
+    string Node_ID = 1;
+    string Core_List = 2;
+    string Core_CState = 3;
+    int32  State = 4;
+}
+
+message NodeCPU_Info
+{
+    ServiceResponse Response = 1;
+    int32 CoreCount = 2;
+    repeated string Supported_Scaling_Governor = 3;
+    repeated string Supported_CState = 4; 
 }
 
 message SetClusterFrequencyRequest
@@ -51,24 +80,24 @@ message SetClusterFrequencyPercentRequest
 message SetNodeCoreFrequencyRequest
 {
     string Node_ID = 1;
-    int32 CoreNumber = 2;
+    string Core_List = 2;
     int32 Frequency = 3;
 }
 
 message SetNodeCoreFrequencyPercentRequest
 {
     string Node_ID = 1;
-    int32 CoreNumber = 2;
+    string Core_List = 2;
     float Frequency = 3;
 }
 
 message CoreFrequencyInfo
 {
     ServiceResponse Response = 1;
-    int32 CoreNumber = 2;
-    int32 MaxFrequency = 3;
-    int32 MinFrequency = 4;
-    int32 CurrentFrequency = 5;
+    int32 MaxFrequency = 2;
+    int32 MinFrequency = 3;
+    int32 CurrentFrequency = 4;
+    string Current_Scaling_Governor = 5;
 }
 
 message NodeListResponse
@@ -77,6 +106,11 @@ message NodeListResponse
     repeated NodeIdentifier Node = 2;
 }    
 
+message NodeCoreIdentifier
+{
+    string Node_ID = 1;
+    int32  CoreNumber = 2;
+}
 message NodeIdentifier
 {
     string Node_ID = 1;
