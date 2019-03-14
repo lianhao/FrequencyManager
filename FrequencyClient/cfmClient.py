@@ -50,8 +50,8 @@ class ArgParser(object):
         parser = argparse.ArgumentParser(description='CLI for Cluster Frequency Manager',usage='''cvmClient -s CMF_IP:Port [-v] <command> [<args>]
 
 Commands are:
-   setClusterFixedFrequency     Record changes to the repository
-   setClusterPercentFrequency   Download objects and refs from another repository
+   setClusterFixedFrequency     Sets entire cluster to specified frequency
+   setClusterPercentFrequency   Sets entire cluster to specified frequency percentage
    getNodeFrequencyRange        Reports the min/max frequency for a node 
    getNodeInfo                  Reports the # of cores, available frequency governors and CStates
    getNodeCoreInfo              Reports the Min/Max core frequency, Current Frequency and governor for a core
@@ -60,7 +60,7 @@ Commands are:
    getClusterNodes              Lists all nodes in the cluster
    setNodeFrequency             sets Freqency of specified cores on node to frequency
    setNodeFrequencyPercent      sets Freqency of specified cores on node to frequency percentage
-   setNodeGovenor               sets the govenor for specified cores on node
+   setNodeGovernor              sets the governor for specified cores on node
    setNodeCState                sets specified CState on specified cores to enable/disable
 ''')
         
@@ -153,7 +153,7 @@ Commands are:
                 if False == response.Success:
                     errorStr = "{0} calling Set_Cluster_Frequency()".format(response.Reason)
                     logger.error(errorStr)
-                    logger.error("Is the govenor set to userspace?")
+                    logger.error("Is the governor set to userspace?")
 
                 else:
                     logger.info("Successful call to Set_Cluster_Frequency()")
@@ -177,7 +177,7 @@ Commands are:
                 if False == response.Success:
                     errorStr = "{0} calling Set_Cluster_Core_Frequency_Percent()".format(response.Reason)
                     logger.error(errorStr)
-                    logger.error("Is the govenor set to userspace?")
+                    logger.error("Is the governor set to userspace?")
 
                 else:
                     logger.info("Successful call to Set_Cluster_Core_Frequency_Percent()")
@@ -196,7 +196,7 @@ Commands are:
                 if False == response.Success:
                     errorStr = "{0} calling Set_Cluster_SineWave_Frequencies()".format(response.Reason)
                     logger.error(errorStr)
-                    logger.error("Is the govenor set to userspace?")
+                    logger.error("Is the governor set to userspace?")
 
                 else:
                     logger.info("Successful call to Set_Cluster_SineWave_Frequencies()")
@@ -299,7 +299,7 @@ Commands are:
                     coreCount = response.CoreCount
                     govStr = ",".join(response.Supported_Scaling_Governor)
                     csStr = ",".join(response.Supported_CState)
-                    print("Node: {0} Core Count: {1} Available Govenors: {2} Available CStates: {3}".format(args.node,coreCount,govStr,csStr))
+                    print("Node: {0} Core Count: {1} Available Governors: {2} Available CStates: {3}".format(args.node,coreCount,govStr,csStr))
 
         except Exception as ex:
             errorStr = "{0} calling Get_Node_CPU_Info()".format(ex)
@@ -325,7 +325,7 @@ Commands are:
                 if False == response.Success:
                     errorStr = "{0} calling Set_Node_Core_Frequency()".format(response.Reason)
                     logger.error(errorStr)
-                    logger.error("Is the govenor set to userspace?")
+                    logger.error("Is the governor set to userspace?")
 
                 else:
                     logger.info("Successful call to Set_Node_Core_Frequency()")
@@ -354,7 +354,7 @@ Commands are:
                 if False == response.Success:
                     errorStr = "{0} calling Set_Node_Core_Frequency_Percent()".format(response.Reason)
                     logger.error(errorStr)
-                    logger.error("Is the govenor set to userspace?")
+                    logger.error("Is the govenror set to userspace?")
 
                 else:
                     logger.info("Successful call to Set_Node_Core_Frequency_Percent()")
@@ -363,18 +363,18 @@ Commands are:
             errorStr = "{0} calling Set_Node_Core_Frequency_Percent()".format(ex)
             logger.error(errorStr)
 
-    def setNodeGovenor(self,argList):
-        parser = argparse.ArgumentParser(description="Sets the frequency govenor for the cores of a node")
+    def setNodeGovernor(self,argList):
+        parser = argparse.ArgumentParser(description="Sets the frequency governor for the cores of a node")
         parser.add_argument("-n","--node",help='fqdn of where the NFM service is running',type=str,required=True)
         parser.add_argument("-c","--cores",help='ex. 1-4,6,7,32-50',type=str,required=True)
-        parser.add_argument("-g","--govenor",help='run getNodeInfo to find out available governors',type=str,required=True)
+        parser.add_argument("-g","--governor",help='run getNodeInfo to find out available governors',type=str,required=True)
 
         args = parser.parse_args(argList)
         
         ClusterRequest = ClusterMessages.SetNodeGovenorRequest()
         ClusterRequest.Node_ID = args.node
         ClusterRequest.Core_List = args.cores
-        ClusterRequest.Core_Govenor = args.govenor
+        ClusterRequest.Core_Govenor = args.governor
         
         try:
             with grpc.insecure_channel(self.target) as channel:
@@ -438,7 +438,7 @@ Commands are:
                 if False == response.Success:
                     errorStr = "{0} calling Set_Cluster_Frequency_Random()".format(response.Reason)
                     logger.error(errorStr)
-                    logger.error("Is the govenor set to userspace?")
+                    logger.error("Is the governor set to userspace?")
 
                 else:
                     logger.info("Successful call to Set_Cluster_Frequency_Random()")

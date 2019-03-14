@@ -40,7 +40,7 @@ import rpcNFM_pb2 as NodeMessages
 import rpcCFM_pb2_grpc as ClusterRPC
 import rpcNFM_pb2_grpc as NodeRPC
 
-VersionStr="19.03.08 Build 1"
+VersionStr="19.03.14 Build 1"
 
 logger = logging.getLogger(__name__)
 _VerboseLevel = logging.ERROR
@@ -68,14 +68,21 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
 
         nodeRequest = NodeMessages.SetFrequencyRequest()
         nodeRequest.Frequency = request.Frequency
-        for targetNode in _NodeList:
-             with grpc.insecure_channel(targetNode) as channel:
-                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-                response = rpcStub.Set_All_Core_Frequency(nodeRequest)                 
-                if False == response.Success:
-                    errorStr = "{0} calling Set_AllCore_Frequency() to node {1}".format(response.Reason,targetNode)
-                    logger.error(errorStr)
-                    success = False
+
+        try:
+            for targetNode in _NodeList:
+                with grpc.insecure_channel(targetNode) as channel:
+                    rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                    response = rpcStub.Set_All_Core_Frequency(nodeRequest)                 
+                    if False == response.Success:
+                        errorStr = "{0} calling Set_AllCore_Frequency() to node {1}".format(response.Reason,targetNode)
+                        logger.error(errorStr)
+                        success = False
+        
+        except Exception as ex:
+                errorStr = "{0} calling Set_AllCore_Frequency() to node {1}".format(ex,targetNode)
+                logger.error(errorStr)
+                success = False
         
         fnResponse = ClusterMessages.ServiceResponse()
         fnResponse.Success = success
@@ -91,15 +98,21 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         nodeRequest = NodeMessages.SetFrequencyPercentRequest()
         nodeRequest.Frequency = request.Frequency
 
-        for targetNode in _NodeList:
-             with grpc.insecure_channel(targetNode) as channel:
-                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-                response = rpcStub.Set_All_Core_Percent_Frequency(nodeRequest)                 
-                if False == response.Success:
-                    errorStr = "{0} calling Set_AllCore_Frequency_Percent() to node {1}".format(response.Reason,targetNode)
-                    logger.error(errorStr)
-                    success = False
+        try:
+            for targetNode in _NodeList:
+                with grpc.insecure_channel(targetNode) as channel:
+                    rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                    response = rpcStub.Set_All_Core_Percent_Frequency(nodeRequest)                 
+                    if False == response.Success:
+                        errorStr = "{0} calling Set_AllCore_Frequency_Percent() to node {1}".format(response.Reason,targetNode)
+                        logger.error(errorStr)
+                        success = False
         
+        except Exception as ex:
+                errorStr = "{0} calling Set_AllCore_Frequency_Percent() to node {1}".format(ex,targetNode)
+                logger.error(errorStr)
+                success = False
+
         fnResponse = ClusterMessages.ServiceResponse()
         fnResponse.Success = success
         fnResponse.Reason = errorStr
@@ -113,14 +126,20 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
 
         nodeRequest = NodeMessages.Empty()
         
-        for targetNode in _NodeList:
-             with grpc.insecure_channel(targetNode) as channel:
-                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-                response = rpcStub.Set_Random_Frequencies(nodeRequest)                 
-                if False == response.Success:
-                    errorStr = "{0} calling Set_Random_Frequencies() to node {1}".format(response.Reason,targetNode)
-                    logger.error(errorStr)
-                    success = False
+        try:
+            for targetNode in _NodeList:
+                with grpc.insecure_channel(targetNode) as channel:
+                    rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                    response = rpcStub.Set_Random_Frequencies(nodeRequest)                 
+                    if False == response.Success:
+                        errorStr = "{0} calling Set_Random_Frequencies() to node {1}".format(response.Reason,targetNode)
+                        logger.error(errorStr)
+                        success = False
+
+        except Exception as ex:
+                errorStr = "{0} calling Set_Random_Frequencies() to node {1}".format(ex,targetNode)
+                logger.error(errorStr)
+                success = False
         
         fnResponse = ClusterMessages.ServiceResponse()
         fnResponse.Success = success
@@ -135,14 +154,20 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
 
         nodeRequest = NodeMessages.Empty()
         
-        for targetNode in _NodeList:
-             with grpc.insecure_channel(targetNode) as channel:
-                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-                response = rpcStub.Set_SineWave_Frequencies(nodeRequest)                 
-                if False == response.Success:
-                    errorStr = "{0} calling Set_SineWave_Frequencies() to node {1}".format(response.Reason,targetNode)
-                    logger.error(errorStr)
-                    success = False
+        try:
+            for targetNode in _NodeList:
+                with grpc.insecure_channel(targetNode) as channel:
+                    rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                    response = rpcStub.Set_SineWave_Frequencies(nodeRequest)                 
+                    if False == response.Success:
+                        errorStr = "{0} calling Set_SineWave_Frequencies() to node {1}".format(response.Reason,targetNode)
+                        logger.error(errorStr)
+                        success = False
+
+        except Exception as ex:
+                errorStr = "{0} calling Set_SineWave_Frequencies() to node {1}".format(ex,targetNode)
+                logger.error(errorStr)
+                success = False
         
         fnResponse = ClusterMessages.ServiceResponse()
         fnResponse.Success = success
@@ -171,12 +196,17 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
             fnResponse.Reason = "Node {} is not valid".format(objSetNodeCoreFrequencyRequest.Node_ID)
 
             return fnResponse
+        try:
+            with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Set_Core_Frequency(nodeRequest)
+                if False == response.Success:
+                    errorStr = "{0} calling Set_Core_Frequency() to node {1}".format(response.Reason,targetNode)
+                    logger.error(errorStr)
+                    success = False
 
-        with grpc.insecure_channel(targetNode) as channel:
-            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-            response = rpcStub.Set_Core_Frequency(nodeRequest)
-            if False == response.Success:
-                errorStr = "{0} calling Set_Core_Frequency() to node {1}".format(response.Reason,targetNode)
+        except Exception as ex:
+                errorStr = "{0} calling Set_Core_Frequency() to node {1}".format(ex,targetNode)
                 logger.error(errorStr)
                 success = False
         
@@ -224,14 +254,20 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         nodeRequest = NodeMessages.CoreNumber()
         nodeRequest.CoreNumber = 0 # just go ask for a core
         
-        with grpc.insecure_channel(targetNode) as channel:
-            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-            response = rpcStub.Get_Core_Frequency_Info(nodeRequest)                 
-            if False == response.Response.Success:
-                errorStr = "{0} calling Get_Core_Frequency_Info() to node {1}".format(response.Response.Reason,targetNode)
+        try:
+            with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Get_Core_Frequency_Info(nodeRequest)                 
+                if False == response.Response.Success:
+                    errorStr = "{0} calling Get_Core_Frequency_Info() to node {1}".format(response.Response.Reason,targetNode)
+                    logger.error(errorStr)
+                    success = False
+        
+        except Exception as ex:
+                errorStr = "{0} calling Get_Core_Frequency_Info() to node {1}".format(ex,targetNode)
                 logger.error(errorStr)
                 success = False
-        
+
         fnResponse.Response.Success = success
         fnResponse.Response.Reason = errorStr
 
@@ -265,14 +301,20 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         nodeRequest = NodeMessages.CoreNumber()
         nodeRequest.CoreNumber = request.CoreNumber
         
-        with grpc.insecure_channel(targetNode) as channel:
-            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-            response = rpcStub.Get_Core_Frequency_Info(nodeRequest)                 
-            if False == response.Response.Success:
-                errorStr = "{0} calling Get_Node_Core_Info() to node {1}".format(response.Response.Reason,targetNode)
+        try:
+            with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Get_Core_Frequency_Info(nodeRequest)                 
+                if False == response.Response.Success:
+                    errorStr = "{0} calling Get_Node_Core_Info() to node {1}".format(response.Response.Reason,targetNode)
+                    logger.error(errorStr)
+                    success = False
+        
+        except Exception as ex:
+                errorStr = "{0} calling Get_Node_Core_Info() to node {1}".format(ex,targetNode)
                 logger.error(errorStr)
                 success = False
-        
+
         fnResponse.Response.Success = success
         fnResponse.Response.Reason = errorStr
 
@@ -304,12 +346,17 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
 
         nodeRequest = NodeMessages.CoreNumber()
         nodeRequest.CoreNumber = 0 # just go ask for a core
-        
-        with grpc.insecure_channel(targetNode) as channel:
-            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-            response = rpcStub.Get_Node_CPU_Info(nodeRequest)                 
-            if False == response.Response.Success:
-                errorStr = "{0} calling Get_Node_CPU_Info() to node {1}".format(response.Response.Reason,targetNode)
+
+        try:        
+            with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Get_Node_CPU_Info(nodeRequest)                 
+                if False == response.Response.Success:
+                    errorStr = "{0} calling Get_Node_CPU_Info() to node {1}".format(response.Response.Reason,targetNode)
+                    logger.error(errorStr)
+                    success = False
+        except Exception as ex:
+                errorStr = "{0} calling Get_Node_CPU_Info() to node {1}".format(ex,targetNode)
                 logger.error(errorStr)
                 success = False
         
@@ -349,12 +396,18 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         nodeRequest.Core_List = objSetNodeCStateRequest.Core_List
         nodeRequest.Core_CState = objSetNodeCStateRequest.Core_CState
         nodeRequest.State = objSetNodeCStateRequest.State
-        
-        with grpc.insecure_channel(targetNode) as channel:
-            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-            response = rpcStub.Set_Core_CState(nodeRequest)                 
-            if False == response.Success:
-                errorStr = "{0} calling Set_Core_CState() to node {1}".format(response.Reason,targetNode)
+
+        try:        
+            with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Set_Core_CState(nodeRequest)                 
+                if False == response.Success:
+                    errorStr = "{0} calling Get_Node_CPU_Info() to node {1}".format(response.Reason,targetNode)
+                    logger.error(errorStr)
+                    success = False
+
+        except Exception as ex:
+                errorStr = "{0} calling Get_Node_CPU_Info() to node {1}".format(ex,targetNode)
                 logger.error(errorStr)
                 success = False
         
@@ -386,14 +439,20 @@ class ClusterFrequencyManager(ClusterRPC.ClusterFrequencyManagerServiceServicer)
         nodeRequest.Core_List = objSetNodeGovenorRequest.Core_List
         nodeRequest.Core_Govenor = objSetNodeGovenorRequest.Core_Govenor
         
-        with grpc.insecure_channel(targetNode) as channel:
-            rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
-            response = rpcStub.Set_Core_Govenor(nodeRequest)                 
-            if False == response.Success:
-                errorStr = "{0} calling Set_Core_Govenor() to node {1}".format(response.Reason,targetNode)
+        try:
+            with grpc.insecure_channel(targetNode) as channel:
+                rpcStub = NodeRPC.NodeFrequencyManagerServiceStub(channel)
+                response = rpcStub.Set_Core_Govenor(nodeRequest)                 
+                if False == response.Success:
+                    errorStr = "{0} calling Set_Core_Govenor() to node {1}".format(response.Reason,targetNode)
+                    logger.error(errorStr)
+                    success = False
+
+        except Exception as ex:
+                errorStr = "{0} calling Set_Core_Govenor() to node {1}".format(ex,targetNode)
                 logger.error(errorStr)
                 success = False
-        
+
         fnResponse.Success = success
         fnResponse.Reason = errorStr
 
@@ -429,6 +488,10 @@ def runAsService(hostAddr,hostPort):
 
     except KeyboardInterrupt:
         server.stop(0)
+
+    except Exception as ex:
+        print(str(ex))
+
 
 def validateNodes(nodeList):
     retArray=[]
@@ -516,7 +579,10 @@ def main():
         return
 
     #getFrequencyInfo()
-    runAsService(ip,port)
+    try:
+        runAsService(ip,port)
+    except Exception as ex:
+        print(str(ex))
 
 if __name__ == "__main__":
     main()

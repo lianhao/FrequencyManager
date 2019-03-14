@@ -1,5 +1,7 @@
 # Use an official Python runtime as a parent image
 FROM python:3.7-slim
+# Disables buffered output - for logging
+ENV PYTHONUNBUFFERD=0
 
 RUN mkdir NodeFrequencyManager && \
 pip install grpcio-tools googleapis-common-protos  
