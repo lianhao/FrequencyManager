@@ -45,7 +45,7 @@ coreCount = 0
 errorStr=""
 sysFreqInfo={}
 
-VersionStr="19.03.08 Build 2"
+VersionStr="19.03.19 Build 1"
 
 logger = logging.getLogger(__name__)
 
@@ -251,7 +251,7 @@ class NodeFrequencyManager(rpcNFD.NodeFrequencyManagerServiceServicer):
         
         if frequency > coreMax:
             errorStr = "Cannot set core #{0} frequency to {1}, maximum is {2}".format(coreNum,frequency,coreMax)
-            return False
+            return set_cpu_freq(frequency,[coreMax,])
         
         if frequency < coreMin:
             errorStr = "Cannot set core #{0} frequency to {1}, minimum is {2}".format(coreNum,frequency,coreMin)

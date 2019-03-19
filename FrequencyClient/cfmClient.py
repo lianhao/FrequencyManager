@@ -35,7 +35,7 @@ import time
 import argparse,textwrap
 import logging
 import grpc
-from pprint import pprint as print
+from pprint import pprint as pprint
 from concurrent import futures
 import rpcCFM_pb2 as ClusterMessages 
 import rpcCFM_pb2_grpc as ClusterRPC
@@ -99,7 +99,7 @@ Commands are:
                 _VerboseLevel = args.verbose
 
         except Exception as Ex:
-            print(str(Ex))
+            pprint(str(Ex))
             return
 
         if 3 <= _VerboseLevel:
@@ -218,9 +218,9 @@ Commands are:
 
                 else:
                     logger.info("Successful call to Get_Cluster_Nodelist()")
-                    print("--- Node Frequency Manager Nodes ---")
+                    pprint("--- Node Frequency Manager Nodes ---")
                     for node in response.Node:
-                        print(node.Node_ID)
+                        pprint(node.Node_ID)
                     
 
         except Exception as ex:
@@ -245,7 +245,7 @@ Commands are:
 
                 else:
                     logger.info("Successful call to Get_Node_Frequency_Range()")
-                    print("Node {} Frequency Range: Max: {} Min:{}".format(args.node,response.MaxFrequency,response.MinFrequency))
+                    pprint("Node {} Frequency Range: Max: {} Min:{}".format(args.node,response.MaxFrequency,response.MinFrequency))
                     
 
         except Exception as ex:
@@ -272,7 +272,7 @@ Commands are:
 
                 else:
                     logger.info("Successful call to Get_Core_Frequency_Info()")
-                    print("Node {} Core {} Frequency Range: Max: {} Min:{} Current Freq: {} Current Scaling Governor: {}".format(args.node,args.corenum,response.MaxFrequency,response.MinFrequency,response.CurrentFrequency,response.Current_Scaling_Governor))
+                    pprint("Node {} Core {} Frequency Range: Max: {} Min:{} Current Freq: {} Current Scaling Governor: {}".format(args.node,args.corenum,response.MaxFrequency,response.MinFrequency,response.CurrentFrequency,response.Current_Scaling_Governor))
                     
         except Exception as ex:
             errorStr = "{0} calling Get_Node_Core_Info()".format(ex)
@@ -299,7 +299,7 @@ Commands are:
                     coreCount = response.CoreCount
                     govStr = ",".join(response.Supported_Scaling_Governor)
                     csStr = ",".join(response.Supported_CState)
-                    print("Node: {0} Core Count: {1} Available Governors: {2} Available CStates: {3}".format(args.node,coreCount,govStr,csStr))
+                    pprint("Node: {0} Core Count: {1} Available Governors: {2} Available CStates: {3}".format(args.node,coreCount,govStr,csStr))
 
         except Exception as ex:
             errorStr = "{0} calling Get_Node_CPU_Info()".format(ex)
